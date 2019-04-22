@@ -29,11 +29,11 @@ rcbox: any file created in "<service_location>\boxes\rcbox" will trigger a serve
 
 1. Create a class and implement interface IExecuteLogic
 
-    public interface IExecuteLogic
-    {
-        string ProcessingLogic(IEnumerable<string> requestContent);
-    }
-    
+            public interface IExecuteLogic
+            {
+                string ProcessingLogic(IEnumerable<string> requestContent);
+            }
+
 The requestContent is what client side provided for processing on server side.
 
 2. Implement interface :
@@ -51,22 +51,22 @@ You can refer to exmaple:  FileWatcherProcessService/RPCServerTokenToProcessorMa
 
 3. Modify the main to async main (C# 7.3 lang support):
 
-        static async Task Main(string[] args)
-        { 
-            IFileProcessingHost host = 
-                    FileProcessingHostEntrance.GetFileProcessingHost(new RPCServerTokenToProcessorMapper());
-            if(args.Length>0 && args[0].Equals("debug"))
-            {
-                host.RunConsole();
-                Console.WriteLine("Press Enter to exit");
-                Console.ReadLine();
-                await host.StopConsoleAsync();
-            }
-            else
+            static async Task Main(string[] args)
             { 
-                host.RunAsService();
+                IFileProcessingHost host = 
+                        FileProcessingHostEntrance.GetFileProcessingHost(new RPCServerTokenToProcessorMapper());
+                if(args.Length>0 && args[0].Equals("debug"))
+                {
+                    host.RunConsole();
+                    Console.WriteLine("Press Enter to exit");
+                    Console.ReadLine();
+                    await host.StopConsoleAsync();
+                }
+                else
+                { 
+                    host.RunAsService();
+                }
             }
-        }
         
 And you are set for the server service.
  
@@ -86,46 +86,46 @@ This is for client to know what are the user-defined-string that the server know
 
 0. Create a ClientEntrace factory using:
 
-        IClientEntrance factory = ClientEntraceFactory.GetClientEntrance(new RPCClientTokenProvider());
+            IClientEntrance factory = ClientEntraceFactory.GetClientEntrance(new RPCClientTokenProvider());
            
  
 1. Resolve the IFsRPCBase using the user-defined-string:
 
-        IFsRPCBase fsDemoRPC = factory.GetRPCObject(<user defined string>);
+            IFsRPCBase fsDemoRPC = factory.GetRPCObject(<user defined string>);
         
 
 2. RunOnNode 
 
-        (bool ok, string output) RunOnNode(string node, string contentToRun);
+            (bool ok, string output) RunOnNode(string node, string contentToRun);
         
 this function will create a file on the target server with path: 
 
-        ServiceProfileInstance.GetNodeServiceNetLocation()/boxes/inbox/orch_<user-defined-string>_guid.txt
+            ServiceProfileInstance.GetNodeServiceNetLocation()/boxes/inbox/orch_<user-defined-string>_guid.txt
 
 If the service is not configured on the target server, or it is of old version, it will be deployed/update automatically.
 It will check the service location/boxes/ directory for doing RPC.
 
 3. RunOnNode with client-side timeout
 
-        (bool ok, string output) RunOnNode(string node, string contentToRun, int timeoutSeconds);
+            (bool ok, string output) RunOnNode(string node, string contentToRun, int timeoutSeconds);
 
 The call will return (false, $@"[ORCH-ERR]the operation time out ({timeoutSeconds})") if the call timeout. Note the request on the server will not be aborted, only client-side is timing out.
 
 3.1 How the service looks like:
         
-        a) The client will deploy it on user_home/filewatcherprocesservice2
-        b) The client uses the profile.ini file (same location as your client.exe) to configure the service log on user credentials on targeting server
-        c) It starts up automatically upon server reboot
-        d) It has some dependencies on networking for SMB path to work
-        e) Its name: FileWatcherProcessService2
+            a) The client will deploy it on user_home/filewatcherprocesservice2
+            b) The client uses the profile.ini file (same location as your client.exe) to configure the service log on user credentials on targeting server
+            c) It starts up automatically upon server reboot
+            d) It has some dependencies on networking for SMB path to work
+            e) Its name: FileWatcherProcessService2
         
         
 3.2 Auto deployment of the server service will happen when:
 
-        a) There's no FileWatcherPRocessService2 found on the remote server
-        b) The profile.ini on the remote server not match with the one on client - this is designed to automacticall fix the service logon password expiration.
-        c) The FileWatcherPRocessService2.dll found on the remote server is of older version than the client's
-        
+            a) There's no FileWatcherPRocessService2 found on the remote server
+            b) The profile.ini on the remote server not match with the one on client - this is designed to automacticall fix the service logon password expiration.
+            c) The FileWatcherPRocessService2.dll found on the remote server is of older version than the client's
+
 3.3 How can the client find the service binary to deploy:
 
 You need to make sure the client binary is having below hierarchy:
