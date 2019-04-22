@@ -1,8 +1,0 @@
-{
-  "environment": "development",
-
-  "OrchConfig": {
-    "LogLevel": "debug"
-  }
-
-}

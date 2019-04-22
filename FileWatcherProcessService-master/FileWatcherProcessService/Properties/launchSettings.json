@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "FileWatcherProcessService": {
-      "commandName": "Project",
-      "commandLineArgs": "debug"
-    }
-  }
-}
