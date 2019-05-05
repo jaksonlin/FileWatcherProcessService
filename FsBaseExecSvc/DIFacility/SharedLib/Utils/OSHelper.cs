@@ -347,6 +347,7 @@ namespace DIFacility.SharedLib.Utils
                 process.WaitForExit();
                 result = $"{stdErrorOutput.ToString().Trim()} {Environment.NewLine} {stdOutput.ToString().Trim()}";
                 this.logger.LogInformation($@"Run cmd [PID : {pid}] success: {startInfo.FileName}, with args {startInfo.Arguments}");
+                this.logger.LogDebug($@"Cmd output: {result}");
                 return (true, result.Trim());
             }
             catch (Exception ex)
@@ -354,6 +355,7 @@ namespace DIFacility.SharedLib.Utils
                 this.logger.LogError(ex, $@"Run cmd [PID : {pid}] failed: {startInfo.FileName} {startInfo.Arguments}");
                 result = $@"Run cmd [PID : {pid}] failed: {startInfo.FileName} {startInfo.Arguments} {ex.Message} {ex.StackTrace}";
             }
+            this.logger.LogDebug($@"the result of cmd [PID : {pid}] is failed, cmd output {result}");
             return (false, result);
         }
         #endregion

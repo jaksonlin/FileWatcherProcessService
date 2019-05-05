@@ -3,3 +3,13 @@
 ################################################################################
 
 /.vs/FileWatcherProcessService/v15/Server/sqlite3
+/.vs/FileWatcherProcessService/v15
+/.vs
+/ClientExample/obj
+/FileWatcherProcessService/obj/Debug/netcoreapp2.2
+/FileWatcherProcessService/obj/Release/netcoreapp2.2
+/FileWatcherProcessService/obj
+/FsBaseExecCli/obj
+/FsBaseExecSvc/bin/Debug/netstandard2.0
+/FsBaseExecSvc/obj
+/FsBaseExecSvc/bin/Release

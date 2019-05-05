@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>1.0.4</Version>
+    <Version>1.0.6</Version>
     <Authors>Zhishun.Lin</Authors>
     <Company>Zhishun.Lin</Company>
     <Description>An easy to use Filesystem Base request processing service, using FileWatcher, Generic Hosting, with RPC like support</Description>

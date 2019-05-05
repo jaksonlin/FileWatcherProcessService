@@ -76,9 +76,9 @@ namespace FsBaseExecSvc.Executor
                 }
                 catch (Exception ex)
                 {
-                    string result = $@"Hit failure when processing {ConfigFile}, {this.stringHelper.GetExceptionDetails(ex)} {Environment.NewLine} this is caused by bug in the implenmetation of {this.GetType().ToString()}";
+                    string result = $@"Hit failure when processing {ConfigFile}, {this.stringHelper.GetExceptionDetails(ex)}";
                     WriteByString(OutputFile, result);
-                    this.logger.LogError($@"Hit failure when processing {ConfigFile} {Environment.NewLine} this is caused by bug in the implenmetation of {this.GetType().ToString()}", ex);
+                    this.logger.LogError($@"Hit failure when processing {ConfigFile}", ex);
                 }
                 finally
                 {
