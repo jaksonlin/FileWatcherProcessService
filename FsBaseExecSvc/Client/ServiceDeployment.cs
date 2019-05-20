@@ -23,50 +23,24 @@ namespace FsBaseExecSvc.Client
             this.logger = logger;
             this.helper = helper;
         }
-        public  async Task<bool> DeployService(IEnumerable<string> nodes, string binName, string serviceName, string domain, string user, SecureString pwd, string srcFiles, bool reInstall = false)
+        public bool DeployService(string node, ServiceProfile profile, bool reInstall)
         {
-            var tasks = new List<Task<bool>>();
-            foreach (var node in nodes)
-            {
-                tasks.Add(Task.Run(() =>
-                {
-                    var result = DeployOperation(node, binName, serviceName, domain, user, pwd, srcFiles, reInstall);
-                    if (result == false)
-                    {
-                        this.logger.LogWarning($@"{node} failed");
-                    }
-                    return result;
-                }));
-            }
-            return await Task.WhenAll(tasks).ContinueWith<bool>(t=> {
-                if (t.IsCompleted)
-                {
-                    if (t.Result.Any(r => r == false))
-                    {
-                        return false;
-                    }
-                    else
-                    {
-                        return true;
-                    }
-                }
-                else
-                {
-                    return false;
-                }
-            });
-            
-        }
-        public  bool DeployService(string node, ServiceProfile profile, bool reInstall)
-        {
-            var result = DeployOperation(node, profile.ServiceBinFullName, profile.ServiceName, profile.Domain, profile.Username, profile.Pwd, profile.SvcInstallMediaLoc, reInstall);
+            var result = DeployOperation(
+                node,
+                profile.ServiceBinFullName,
+                profile.ServiceName,
+                profile.Domain,
+                profile.Username,
+                profile.Pwd,
+                profile.SvcInstallMediaLoc,
+                reInstall);
             if (result == false)
             {
                 this.logger.LogWarning($@"DeployService on {node} failed");
             }
             return result;
         }
-        protected  bool BringUpStoppedService(string serviceName, string node)
+        protected bool BringUpStoppedService(string serviceName, string node)
         {
             Thread.Sleep(2000);
             this.helper.StartService(serviceName, node);
@@ -81,7 +55,7 @@ namespace FsBaseExecSvc.Client
                 return false;
             }
         }
-        protected  bool CheckStartPendingService(string serviceName, string node)
+        protected bool CheckStartPendingService(string serviceName, string node)
         {
             Thread.Sleep(5000);
             string outStart = this.helper.GetService(serviceName, node);
@@ -96,7 +70,7 @@ namespace FsBaseExecSvc.Client
             }
         }
 
-        private  bool DeployOperation(string node, string binName, string serviceName, string domain, string user, SecureString pwd, string srcFiles, bool reInstall)
+        private bool DeployOperation(string node, string binName, string serviceName, string domain, string user, SecureString pwd, string srcFiles, bool reInstall)
         {
             // net use, otherwise all other commands will fail when the machine is in different domain.
             string drive = binName.Trim().Substring(0, 1);
@@ -154,58 +128,66 @@ namespace FsBaseExecSvc.Client
         /// <param name="pwd"></param>
         /// <param name="srcFiles"></param>
         /// <returns></returns>
-        private  bool InstallLogic(string serviceName, string svcBin, string node, string domain, string user, SecureString pwd, string srcFiles)
+        private bool InstallLogic(string serviceName, string svcBin, string node, string domain, string user, SecureString pwd, string srcFiles)
         {
-            var serviceState = this.helper.GetService(serviceName, node);
-            if (serviceState.Contains("RUNNING") || serviceState.Contains("START_PENDING") || serviceState.Contains("STOP_PENDING"))
+            try
             {
-                this.logger.LogInformation($@"Stop service on {node} for re-installing service operation.");
-                var currentState = this.helper.StopService(serviceName, node);
-                if (!currentState)
+                var serviceState = this.helper.GetService(serviceName, node);
+                if (serviceState.Contains("RUNNING") || serviceState.Contains("START_PENDING") || serviceState.Contains("STOP_PENDING"))
                 {
-                    this.logger.LogWarning($@"Fail to stop the helper for install");
-                    return false;
+                    this.logger.LogInformation($@"Stop service on {node} for re-installing service operation.");
+                    var currentState = this.helper.StopService(serviceName, node);
+                    if (!currentState)
+                    {
+                        this.logger.LogWarning($@"Fail to stop the helper for install");
+                        return false;
+                    }
                 }
-            }
 
-            (bool ok, string output) result = (false, "");
-            var runningDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            if(svcBin.IndexOf(runningDir, StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                this.logger.LogWarning($@"copy service binary ({runningDir}) to the remote server ({node})");
-                //copy the current dir to the remote server exclude the boxes directory
-                result = RemoteCopyServiceFiles(runningDir, Directory.GetParent(svcBin).FullName, node, domain, user, this.helper.SecureStringToString(pwd));
-            }
-            else
-            {
-                this.logger.LogWarning($@"copy service binary ({srcFiles}) to the remote server ({node})");
-
-                result = RemoteCopyServiceFiles(srcFiles, Directory.GetParent(svcBin).FullName, node, domain, user, this.helper.SecureStringToString(pwd));
-            }
-
-            if (result.ok)
-            {
-                this.logger.LogInformation("Creating service after recopy copy files...");
-                var rs = this.helper.CreateService(serviceName, node, svcBin, $@"{domain}\{user}", this.helper.SecureStringToString(pwd), @"Tcpip/Dhcp/Dnscache");
-                if (rs.Contains("RUNNING"))
+                (bool ok, string output) result = (false, "");
+                var runningDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                if (svcBin.IndexOf(runningDir, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
-                    this.logger.LogInformation("Create service success...");
-                    return true;
+                    this.logger.LogWarning($@"copy service binary ({runningDir}) to the remote server ({node})");
+                    //copy the current dir to the remote server exclude the boxes directory
+                    result = RemoteCopyServiceFiles(runningDir, Directory.GetParent(svcBin).FullName, node, domain, user, this.helper.SecureStringToString(pwd));
                 }
                 else
                 {
-                    this.logger.LogWarning($@"Create service failed on {node}, {rs}");
+                    this.logger.LogWarning($@"copy service binary ({srcFiles}) to the remote server ({node})");
+
+                    result = RemoteCopyServiceFiles(srcFiles, Directory.GetParent(svcBin).FullName, node, domain, user, this.helper.SecureStringToString(pwd));
+                }
+
+                if (result.ok)
+                {
+                    this.logger.LogInformation("Creating service after recopy copy files...");
+                    var rs = this.helper.CreateService(serviceName, node, svcBin, $@"{domain}\{user}", this.helper.SecureStringToString(pwd), @"Tcpip/Dhcp/Dnscache");
+                    if (rs.Contains("RUNNING"))
+                    {
+                        this.logger.LogInformation("Create service success...");
+                        return true;
+                    }
+                    else
+                    {
+                        this.logger.LogWarning($@"Create service failed on {node}, {rs}");
+                        return false;
+                    }
+                }
+                else
+                {
+                    this.logger.LogWarning($@"remote copy file to node for reinstall {node} failed: {result.output}");
                     return false;
                 }
             }
-            else
+            catch (Exception ex)
             {
-                this.logger.LogWarning($@"remote copy file to node for reinstall {node} failed: {result.output}");
+                this.logger.LogError(ex, $@"Failed in installing the service");
                 return false;
             }
         }
 
-        private  (bool ok, string output) RemoteCopyServiceFiles(string localDir, string targetDir, string node, string domain, string user, string pwd)
+        private (bool ok, string output) RemoteCopyServiceFiles(string localDir, string targetDir, string node, string domain, string user, string pwd)
         {
             (bool ok, string output) result = this.helper.RemoteCopyFiles(node, localDir, targetDir, domain: domain, user: user, pwd: pwd);
             var boxesDir = $@"\\{node}\{targetDir.Replace(":", "$")}\boxes";
